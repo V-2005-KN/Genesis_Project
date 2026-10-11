@@ -70,10 +70,19 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 
-// 4. Rate Limiter for Login Endpoint (10 requests per 15 minutes per IP)
+// Handle invalid JSON body syntax errors gracefully without crashing the server process
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error(`[SERVER] Malformed JSON payload received on ${req.method} ${req.url}: ${err.message}`);
+    return res.status(400).json({ success: false, message: "Invalid JSON format in request payload" });
+  }
+  next(err);
+});
+
+// 4. Rate Limiter for Login Endpoint (relaxed in development for seamless demo testing)
 const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === "production" ? 15 : 120,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many login attempts. Please wait 15 minutes." }
@@ -1376,9 +1385,17 @@ if (fs.existsSync(distPath)) {
   });
 }
 
+// Process-level crash guards to ensure server resilience
+process.on('uncaughtException', (err) => {
+  console.error('[PROCESS ERROR] Uncaught exception prevented:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[PROCESS ERROR] Unhandled rejection prevented:', reason);
+});
+
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Smart Campus Hub Server running on http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Smart Campus Hub Server running on http://localhost:${PORT} and network interfaces`);
   });
 }
 

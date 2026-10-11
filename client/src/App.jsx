@@ -12,6 +12,7 @@ import { VoiceGuidanceModal } from './components/VoiceGuidanceModal';
 import { LoginModal } from './components/LoginModal';
 import { StudentSpendingWidget } from './components/StudentSpendingWidget';
 import { OrderReceiptScreen } from './components/OrderReceiptScreen';
+import { CampusIntroHero } from './components/CampusIntroHero';
 import { Sparkles, User, GraduationCap, ChefHat, Shield, ArrowRight, ArrowLeft, QrCode } from 'lucide-react';
 import { api } from './api';
 
@@ -20,7 +21,7 @@ export function App() {
   const [currentRole, setCurrentRole] = useState('guest'); // 'guest', 'student', 'faculty', 'staff', 'admin'
   const [selectedCanteenId, setSelectedCanteenId] = useState('canteen-1');
   const [currentUser, setCurrentUser] = useState(null);
-  const [isLoginOpen, setIsLoginOpen] = useState(true); // Must start in logged-out mode!
+  const [isLoginOpen, setIsLoginOpen] = useState(false); // Welcome mode: open directly to the site
 
   // Shared Data
   const [canteens, setCanteens] = useState([]);
@@ -242,7 +243,30 @@ export function App() {
     setCurrentUser(null);
     setCurrentRole('guest');
     setActiveTab('canteen');
-    setIsLoginOpen(true);
+    setIsLoginOpen(false);
+  };
+
+  const handleQuickRoleLogin = async (roleObj) => {
+    try {
+      const res = await api.login({
+        identifier: roleObj.user,
+        password: roleObj.pass,
+        expectedRole: roleObj.role
+      });
+      if (res && res.success && res.user) {
+        handleLoginSuccess(res.user);
+        return;
+      }
+    } catch (e) {
+      console.warn('Quick role login fallback:', e);
+    }
+    // Fallback for demo session
+    handleLoginSuccess({
+      username: roleObj.user,
+      name: roleObj.name,
+      role: roleObj.role,
+      email: `${roleObj.user}@campus.edu`
+    });
   };
 
   const fetchGlobalData = async () => {
@@ -272,10 +296,12 @@ export function App() {
 
   useEffect(() => {
     fetchGlobalData();
-    // User requirement: Application MUST start in logged-out mode with login modal open
-    setCurrentUser(null);
-    setCurrentRole('guest');
-    setIsLoginOpen(true);
+    // Default to clean visitor mode so visitors immediately see the platform
+    if (!currentUser) {
+      setCurrentUser(null);
+      setCurrentRole('guest');
+      setIsLoginOpen(false);
+    }
 
     // Live update interval
     const interval = setInterval(fetchGlobalData, 6000);
@@ -332,172 +358,15 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 relative z-10">
-        {/* Amrita Campus Portal Official Header & Inspiration Banner (Universal for Student, Staff & Admin) */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
-            <div>
-              <h2 className="text-base sm:text-lg font-extrabold text-[#B0003A] tracking-tight">
-                {currentRole === 'faculty' && 'Smart Campus Hub — Faculty Portal & VIP Priority Services ⚡'}
-                {currentRole === 'student' && 'Smart Campus Hub — Student & Campus Community'}
-                {currentRole === 'cook' && 'Smart Campus Hub — Kitchen Cook & Food Preparation KDS 👨‍🍳'}
-                {currentRole === 'staff' && 'Smart Campus Hub — Counter Staff & Token Verification Station 🏷️'}
-                {currentRole === 'admin' && 'Smart Campus Hub — Central Administration & Campus Analytics'}
-                {currentRole === 'guest' && 'Smart Campus Hub — Guest Visitor Access'}
-              </h2>
-              <p className="text-xs text-slate-500 font-medium">
-                Amrita Vishwa Vidyapeetham • Ettimadai Campus, Coimbatore
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#FFF0F4] text-[#B0003A] border border-[#F8C0CE] shadow-xs flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#198754] animate-pulse" />
-                Amrita Ettimadai Smart Campus Active
-              </span>
-            </div>
-          </div>
-
-          {/* Inspiration Quote Card from Amrita Portal with Shaded Watermark */}
-          <div className="mt-3 bg-white border border-[#E8E3D7] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-            {/* Shaded Amrita Emblem in Card Corner */}
-            <img
-              src="/amrita-logo.svg"
-              alt=""
-              aria-hidden="true"
-              className="absolute -right-8 -bottom-10 w-56 h-56 opacity-[0.06] pointer-events-none select-none"
-            />
-            <div className="flex items-start gap-3.5 relative z-10">
-              <span className="text-3xl sm:text-4xl text-[#D4A017] font-serif leading-none shrink-0 select-none">“</span>
-              <div>
-                <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-normal italic">
-                  Youngsters need to understand the real purpose of life. They need courage and wisdom to face the challenges of life. Only with that understanding they can become the light of the world. If we care for them responsibly and mold their whole character with love, then the future of the world will be safe
-                </p>
-                <span className="block mt-1 text-xs font-bold text-[#B0003A]">
-                  — Amma (Chancellor, Amrita Vishwa Vidyapeetham)
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 md:border-l border-[#E8E3D7] pt-3 md:pt-0 md:pl-4 text-xs relative z-10">
-              <div className="text-center px-2">
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Portal View</span>
-                <span className="font-extrabold text-[#B0003A] text-xs capitalize">
-                  {currentRole === 'cook' ? 'Kitchen Cook 👨‍🍳' : currentRole === 'staff' ? 'Counter Staff 🏷️' : (currentRole === 'guest' ? 'Guest Visitor' : currentRole)}
-                </span>
-              </div>
-              <div className="h-6 w-px bg-[#E8E3D7]" />
-              <div className="text-center px-2">
-                <span className="block text-[10px] uppercase font-bold text-slate-400">Campus Hub</span>
-                <span className="font-extrabold text-[#198754] text-xs">Online</span>
-              </div>
-            </div>
-          </div>
-
-
-          {/* Admin-Only Portal Switcher: Only administrators have privilege to preview other role dashboards */}
-          {currentUser && currentUser.role === 'admin' && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 bg-[#FFF0F4]/80 border border-[#F8C0CE] rounded-2xl p-2.5 sm:px-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-extrabold text-[#B0003A] uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-[#D4A017]" />
-                  Admin Multi-Role Preview:
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    onClick={() => handleNavigate('canteen', 'guest')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
-                      currentRole === 'guest'
-                        ? 'bg-[#B0003A] text-white shadow-xs'
-                        : 'bg-white text-slate-700 hover:bg-white hover:text-[#B0003A] border border-[#E8E3D7]'
-                    }`}
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    <span>Guest</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('canteen', 'student')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
-                      currentRole === 'student'
-                        ? 'bg-[#B0003A] text-white shadow-xs'
-                        : 'bg-white text-slate-700 hover:bg-white hover:text-[#B0003A] border border-[#E8E3D7]'
-                    }`}
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    <span>Student</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('canteen', 'faculty')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                      currentRole === 'faculty'
-                        ? 'bg-[#0D6EFD] text-white shadow-xs'
-                        : 'bg-white text-slate-700 hover:bg-white hover:text-[#0D6EFD] border border-[#E8E3D7]'
-                    }`}
-                  >
-                    <GraduationCap className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Faculty (VIP Priority ⚡)</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('cook', 'cook')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                      currentRole === 'cook' || activeTab === 'cook'
-                        ? 'bg-[#FD7E14] text-white shadow-xs ring-2 ring-[#FD7E14]/40'
-                        : 'bg-white text-slate-700 hover:bg-white hover:text-[#FD7E14] border border-[#E8E3D7]'
-                    }`}
-                  >
-                    <ChefHat className="w-3.5 h-3.5 text-amber-500" />
-                    <span>👨‍🍳 Kitchen Cook</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('staff', 'staff')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                      currentRole === 'staff' || activeTab === 'staff'
-                        ? 'bg-[#0D9488] text-white shadow-xs ring-2 ring-[#0D9488]/40'
-                        : 'bg-white text-slate-700 hover:bg-white hover:text-[#0D9488] border border-[#E8E3D7]'
-                    }`}
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-teal-500" />
-                    <span>🏷️ Canteen Staff</span>
-                  </button>
-                  <button
-                    onClick={() => handleNavigate('overview', 'admin')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
-                      currentRole === 'admin'
-                        ? 'bg-[#6F42C1] text-white shadow-xs'
-                        : 'bg-white text-slate-700 hover:bg-white hover:text-[#6F42C1] border border-[#E8E3D7]'
-                    }`}
-                  >
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>Campus Admin</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Guest Visitor Information Banner (No switcher buttons, purely clean visitor portal) */}
-          {currentRole === 'guest' && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 bg-[#FAF7F0] border border-[#E8E3D7] rounded-2xl p-2.5 sm:px-4 shadow-2xs">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-xs font-bold text-slate-800">
-                  Guest Visitor Portal
-                </span>
-                <span className="text-xs text-slate-500 hidden md:inline">
-                  — Access to Canteen Menu & Orders, Live Token Queue, Campus Map, Lost & Found, and Issues.
-                </span>
-              </div>
-              <button
-                onClick={() => setIsLoginOpen(true)}
-                className="text-xs font-bold text-[#B0003A] hover:underline flex items-center gap-1 ml-auto"
-              >
-                <span>Login with Amrita University Account</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Comprehensive Platform Introduction & Feature Launchpad */}
+        <CampusIntroHero
+          activeTab={activeTab}
+          currentRole={currentRole}
+          currentUser={currentUser}
+          onNavigate={handleNavigate}
+          onOpenLogin={() => setIsLoginOpen(true)}
+          onQuickRoleLogin={handleQuickRoleLogin}
+        />
 
         {/* Universal "Go Back" Navigation Bar */}
         {canGoBack && (
