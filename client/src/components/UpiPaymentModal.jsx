@@ -1,85 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle, Loader2, Smartphone, Scan, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { X, CheckCircle, Loader2, Smartphone, Scan, ArrowRight, ShieldCheck } from 'lucide-react';
 
-// UPI VPA to target for the demo QR
-const CAMPUS_UPI_VPA = 'amritacampushub@upi';
-
-function SvgQr({ value, size = 180 }) {
-  // Minimal deterministic QR-like pattern built from the string hash.
-  // NOT a real scannable QR — but looks authentic for demo/hackathon use.
-  const modules = 21;
-  const cell = Math.floor(size / modules);
-  const actualSize = cell * modules;
-
-  // Generate a pseudo-random but deterministic grid from the value string
-  const grid = React.useMemo(() => {
-    let hash = 0;
-    for (let i = 0; i < value.length; i++) {
-      hash = (Math.imul(31, hash) + value.charCodeAt(i)) | 0;
-    }
-
-    const result = [];
-    for (let row = 0; row < modules; row++) {
-      const rowArr = [];
-      for (let col = 0; col < modules; col++) {
-        // Finder patterns (corners)
-        const inFinder =
-          (row < 7 && col < 7) ||
-          (row < 7 && col >= modules - 7) ||
-          (row >= modules - 7 && col < 7);
-        if (inFinder) {
-          const r = row % 7;
-          const c = col % (col < 7 ? 7 : modules - 7 - (col - (modules - 7)));
-          const rr = row >= modules - 7 ? row - (modules - 7) : row;
-          const cc = col >= modules - 7 ? col - (modules - 7) : col;
-          const er = row < 7 ? row : rr;
-          const ec = col < 7 ? col : col >= modules - 7 ? cc : c;
-          const isOuter = er === 0 || er === 6 || ec === 0 || ec === 6;
-          const isCenter = er >= 2 && er <= 4 && ec >= 2 && ec <= 4;
-          rowArr.push(isOuter || isCenter ? 1 : 0);
-        } else {
-          // Pseudo-random data modules
-          hash = (Math.imul(hash, 1664525) + 1013904223) | 0;
-          rowArr.push((hash >>> 31) ^ ((row + col) % 3 === 0 ? 1 : 0) ? 1 : 0);
-        }
-      }
-      result.push(rowArr);
-    }
-    return result;
-  }, [value]);
-
-  return (
-    <svg
-      width={actualSize}
-      height={actualSize}
-      viewBox={`0 0 ${actualSize} ${actualSize}`}
-      style={{ display: 'block' }}
-    >
-      <rect width={actualSize} height={actualSize} fill="white" />
-      {grid.map((row, ri) =>
-        row.map((on, ci) =>
-          on ? (
-            <rect
-              key={`${ri}-${ci}`}
-              x={ci * cell}
-              y={ri * cell}
-              width={cell}
-              height={cell}
-              fill="#111"
-            />
-          ) : null
-        )
-      )}
-    </svg>
-  );
-}
+// Real UPI VPA
+const CAMPUS_UPI_VPA = 'vishnuknavaneeth7@oksbi';
 
 export function UpiPaymentModal({ isOpen, onClose, cart, cartTotal, canteenName, onConfirm }) {
   const [step, setStep] = useState('qr'); // 'qr' | 'processing' | 'done'
   const [countdown, setCountdown] = useState(5);
   const timerRef = useRef(null);
 
-  const qrValue = `upi://pay?pa=${CAMPUS_UPI_VPA}&pn=Amrita+Campus+Hub&am=${cartTotal}&cu=INR&tn=${encodeURIComponent('Order at ' + canteenName)}`;
+  const qrValue = `upi://pay?pa=${CAMPUS_UPI_VPA}&pn=Amrita+Smart+Canteen&am=${cartTotal}&cu=INR&tn=${encodeURIComponent('Order at ' + canteenName)}&tr=TXN_${Date.now()}`;
 
   useEffect(() => {
     if (!isOpen) {
@@ -144,15 +74,13 @@ export function UpiPaymentModal({ isOpen, onClose, cart, cartTotal, canteenName,
                 <span className="font-black text-[#B0003A] text-lg font-mono">₹{cartTotal}</span>
               </div>
 
-              {/* QR Code */}
+              {/* Real UPI QR Code */}
               <div className="relative p-3 bg-white border-2 border-[#E8E3D7] rounded-2xl shadow-inner">
-                <SvgQr value={qrValue} size={192} />
-                {/* Center logo overlay */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-10 h-10 rounded-full bg-[#B0003A] border-4 border-white shadow-md flex items-center justify-center">
-                    <span className="text-white font-black text-[10px]">A</span>
-                  </div>
-                </div>
+                <img
+                  src="/upi-qr.jpg"
+                  alt="Scan to pay via UPI"
+                  className="w-48 h-48 object-contain rounded-xl"
+                />
               </div>
 
               {/* UPI VPA */}
@@ -193,7 +121,7 @@ export function UpiPaymentModal({ isOpen, onClose, cart, cartTotal, canteenName,
               <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>
-                  Secured by <strong className="text-slate-700">Amrita Campus Pay</strong> · TLS encrypted
+                  Secured by <strong className="text-slate-700">Amrita Smart Canteen Pay</strong> · TLS encrypted
                 </span>
               </div>
             </div>
